@@ -1,0 +1,27 @@
+VPC creation :
+gcloud compute networks create demo-vpc --project=playground-s-11-e72d3c05 --subnet-mode=custom --mtu=1460 --bgp-routing-mode=global
+
+Subnet creation :
+gcloud compute networks subnets create subnet-1 --project=playground-s-11-e72d3c05 --range=10.1.0.0/24 --stack-type=IPV4_ONLY --network=demo-vpc --region=us-central1
+
+IP-reserve :
+gcloud compute addresses create ip-1 --project=playground-s-11-e72d3c05 --region=us-central1
+if want to do it global just change the last parameter to --global
+
+Instance template :
+gcloud compute instance-templates create instance-template-1 --project=playground-s-11-e72d3c05 --machine-type=n1-standard-1 --network-interface=address=34.110.139.52,network-tier=PREMIUM,subnet=subnet-1 --maintenance-policy=MIGRATE --provisioning-model=STANDARD --service-account=896027375414-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append --region=us-central1 --tags=http-server,https-server --create-disk=auto-delete=yes,boot=yes,device-name=instance-template-1,image=projects/debian-cloud/global/images/debian-11-bullseye-v20220519,mode=rw,size=10,type=pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --reservation-affinity=any
+
+MIG :
+gcloud compute instance-groups managed create instance-group-1 --project=playground-s-11-e72d3c05 --base-instance-name=instance-group-1 --size=2 --template=instance-template-1 --zone=us-central1-a
+
+gcloud beta compute instance-groups managed set-autoscaling instance-group-1 --project=playground-s-11-e72d3c05 --zone=us-central1-a --cool-down-period=60 --max-num-replicas=3 --min-num-replicas=2 --mode=on --target-cpu-utilization=0.6
+
+
+
+
+
+Flow :
+Instance template -> firewall -> MIG -> load balancer
+
+docs:
+https://cloud.google.com/load-balancing/docs/health-checks#fw-rule
