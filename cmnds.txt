@@ -1,0 +1,59 @@
+Flow of creating project :
+-> VPC
+-> Subnet
+-> Reserve static-ip address
+-> Firewall rule
+-> Instance template
+-> Health-check
+-> Managed Instance group
+-> Load Balancer
+
+
+
+
+
+
+VPC creation : gcloud compute networks create hardik-vpc --project=playground-s-11-3ca579c5 --subnet-mode=custom --mtu=1460 --bgp-routing-mode=global
+
+Subnet creation : gcloud compute networks subnets create subnet-us-central1 --project=playground-s-11-3ca579c5 --range=10.128.0.0/20 --stack-type=IPV4_ONLY --network=hardik-vpc --region=us-central1
+
+Static ip reservation : gcloud compute addresses create hardik-static-ip --project=playground-s-11-3ca579c5 --global
+
+tag : allow-health-checks
+
+firewall rule : gcloud compute --project=playground-s-11-5b624c38 firewall-rules create rule-1 --direction=INGRESS --priority=1000 --network=hardik-vpc --action=ALLOW --rules=tcp:22,tcp:5000 --source-ranges=0.0.0.0/0
+
+instance template : gcloud compute instance-templates create hardik-instance-template --project=playground-s-11-3ca579c5 --machine-type=n1-standard-1 --network-interface=network-tier=PREMIUM,subnet=subnet-us-central1 --metadata=startup-script=sudo\ apt\ update$'\n'sudo\ apt\ install\ python3-pip\ -y$'\n'sudo\ apt-get\ -y\ install\ git$'\n'git\ clone\ https://github.com/hardikgandhi03/flask-demo$'\n'pip\ install\ flask$'\n'sudo\ pip\ install\ firebase-admin$'\n'cd\ flask-demo$'\n'python3\ main.py --maintenance-policy=MIGRATE --provisioning-model=STANDARD --service-account=385086455025-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append --region=us-central1 --tags=allow-health-checks,http-server,https-server --create-disk=auto-delete=yes,boot=yes,device-name=hardik-instance-template,image=projects/debian-cloud/global/images/debian-11-bullseye-v20220519,mode=rw,size=10,type=pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --reservation-affinity=any
+
+health check : gcloud beta compute health-checks create tcp hardik-health --project=playground-s-11-3ca579c5 --port=5000 --proxy-header=NONE --no-enable-logging --check-interval=10 --timeout=10 --unhealthy-threshold=3 --healthy-threshold=2
+
+MIG :
+gcloud beta compute instance-groups managed create hardik-instance-group --project=playground-s-11-3ca579c5 --base-instance-name=hardik-instance-group --size=2 --template=hardik-instance-template --zones=us-central1-c,us-central1-f,us-central1-b --target-distribution-shape=EVEN --health-check=hardik-health --initial-delay=300
+
+gcloud beta compute instance-groups managed set-autoscaling hardik-instance-group --project=playground-s-11-3ca579c5 --region=us-central1 --cool-down-period=60 --max-num-replicas=3 --min-num-replicas=2 --mode=on --target-cpu-utilization=0.6
+
+
+
+
+startup script cmnds :
+sudo apt update
+sudo apt install python3-pip -y
+sudo apt-get -y install git
+git clone https://github.com/hardikgandhi03/flask-demo
+pip install flask
+sudo pip install firebase-admin
+cd flask-demo
+python3 main.py
+
+
+
+Front end startup script :
+sudo apt-get -y install git
+git clone https://github.com/hardikgandhi03/flask-demo
+sudo apt update && sudo apt -y install apache2
+cd /var/www/
+sudo chmod 777 html/
+cd /home/cloud_user_p_16c59cf2/
+mv * /var/www/html/
+
+you can access it : http://34.67.236.158/flask-demo/templates/index.html
