@@ -1,6 +1,6 @@
 Setting enviornment in python for flask :
-set FLASK_APP=hello.py
-$env:FLASK_APP = "hello.py"
+set FLASK_APP=main.py
+$env:FLASK_APP = "main.py"
 flask run
 $env:FLASK_ENV = "development" //set the enviornment to development
 

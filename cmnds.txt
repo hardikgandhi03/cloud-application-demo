@@ -56,4 +56,3 @@ sudo chmod 777 html/
 cd /home/cloud_user_p_16c59cf2/
 mv * /var/www/html/
 
-you can access it : http://34.67.236.158/flask-demo/templates/index.html
